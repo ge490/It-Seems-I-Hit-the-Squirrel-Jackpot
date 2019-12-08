@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>It Seems I Hit the Squirrel Jackpot! </title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css" integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js" integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew==" crossorigin=""></script>
+	
+</head>
+
+<style> </style>
+
+<body>
+<div id="mapid" style="width: 600px; height: 400px;"></div>
+<script>
+var mymap = L.map('mapid').setView([40.7829,-73.9654], 13);
+
+L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+	maxZoom: 18,
+	attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+		'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+		'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+	id: 'mapbox/streets-v11'
+}).addTo(mymap);
+
+hectareKey = {}
+
+/*var testlngs = [[40.768078, -73.981749], [40.764318, -73.973020], [40.796869, -73.949362], [40.800391, -73.958159]];
+testShape = L.polygon(testlngs);
+testShape.addTo(mymap);
+*/
+
+plotSquares();
+//assignStoriesToSquares(results(), storiesList);
+
+function plotSquares() {
+	var cornersList = findCorners();
+	
+	for (var col = 0; col < 9; col++) {
+		for (var row = 0; row < 2; row++) {
+			var sqLatLngs = cornersList[row][col];
+			var newSq = L.polygon(sqLatLngs);
+			// var newSq = L.polygon([[40.768078, -73.981749], [40.76766, -73.980779], [40.768429, -73.980217], [40.768847, -73.981187]]);
+			//var newSq = L.polygon([[40.768078, -73.981749], [40.764318, -73.973020], [40.796869, -73.949362], [40.800391, -73.958159]]);
+			newSq.addTo(mymap);
+			hectareKey[getHectLabel(row, col)] = newSq;
+		}
+	}
+}
+
+function getHectLabel(num, letr) {
+	lettersKey = {"0": "A", "1": "B", "2":"C", "3":"D", "4":"E", "5":"F", "6":"G", "7":"H", "8":"I"};
+	return num.toString() + lettersKey[letr];
+}
+
+function newLatFormula(oldLat) {
+	return (oldLat + 0.00076935714);
+}
+
+function newLongFormula(oldLong) {
+	return (oldLong + 0.00096988888);
+}
+
+function getNewLongWhenMoveNE(lat) {
+	return (0.73004673041817*(lat)-103.74435104933);
+}
+
+function getNewLatWhenMoveSE(lng) {
+	return ((lng-20.663078888708)/-(2.3215425531885));
+}
+
+function findCorners() {
+	// loop through map coords & find each square's corners, store in a list
+
+	// central park corners: [40.796869, -73.949262], [40.768078, -73.981749], 
+	// [40.800391, -73.958159], [40.764318, -73.973020]
+	
+	var allSquares = new Array(42).fill(0).map(() => new Array(9).fill(0));;
+	var currentSquare = [];
+	
+	var startLat = 40.768078; // bottom left corner x
+	var startLong = -73.981749; // bottom left corner y
+
+	var initSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
+	var currentSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
+	
+	for (col = 0; col < 2; col++) {
+		for (row = 0; row < 2; row++) {	 
+			newSq = [];
+			
+			var bottomLeftCorner = L.latLng(currentSq[2].lat, currentSq[2].lng);
+
+			var bottomRightCorner = L.latLng(currentSq[3].lat, currentSq[3].lng);
+			if ( bottomRightCorner.lat == 0)
+			{
+				bottomRightCorner.lng = newLongFormula(bottomLeftCorner.lng);
+				bottomRightCorner.lat = getNewLatWhenMoveSE(bottomRightCorner.lng);			
+				//bottomRightCorner = L.latLng(bottomRightLat, bottomRightLong);			
+			}
+			
+			var topLeftCorner;
+			
+			if (col > 0) {
+				var prevSq = allSquares[row][col-1]
+				topLeftCorner = prevSq[2];
+				console.log("IN IF: " + topLeftCorner);
+			}
+			
+			else if(currentSq[0].lat == 0)
+			{
+				var topLeftLat = newLatFormula(bottomLeftCorner.lat);
+				var topLeftLong = getNewLongWhenMoveNE(topLeftLat);	
+				topLeftCorner = L.latLng(topLeftLat, topLeftLong);
+				console.log("IN ELSE IF");
+			}
+			
+			else
+			{
+				var prevBottomLeft = currentSq[0];
+				var prevTopLeft = currentSq[3]; //bottomLeftCorner;
+				var latDiff =  prevTopLeft.lat - prevBottomLeft.lat;
+				var longDiff = prevTopLeft.lng - prevBottomLeft.lng;
+				var newTopLeftLng = bottomLeftCorner.lng + longDiff;
+				var newTopLeftLat = bottomLeftCorner.lat + latDiff;
+								
+				topLeftCorner = L.latLng(newTopLeftLat, newTopLeftLng);
+				console.log("IN ELSE");
+			}
+			
+			var topRightLat = newLatFormula(bottomRightCorner.lat);
+			var topRightLong = topLeftCorner.lng - ((topLeftCorner.lng - bottomRightCorner.lng)-(topLeftCorner.lng - bottomLeftCorner.lng));
+			var topRightCorner = L.latLng(topRightLat, topRightLong);
+			
+			if (row == 0) {
+				initSq[2].lat = bottomRightCorner.lat;
+				initSq[2].lng = bottomRightCorner.lng;
+			}
+			
+			newSq.push(bottomLeftCorner);
+			newSq.push(bottomRightCorner);
+			newSq.push(topRightCorner);
+			newSq.push(topLeftCorner);
+			
+			console.log("col: " + col + " row: " + row + "\n" + newSq);
+			
+			allSquares[row][col] = newSq;
+			currentSq = newSq;
+		}
+		currentSq = initSq;
+	}
+	
+	return allSquares;
+}
+</script>
+
+<form name="dateform" onsubmit = "return results()" method="GET">
+          <p>
+             <label>Select a date: </label>
+             <select id = "Date">
+			   <option id = "All" value = "all">All Dates</option>
+			   <option id = "Date1006" value = "1006">October 6</option>
+			   <option id = "Date1007" value = "1007">October 7</option>
+			   <option id = "Date1008" value = "1008">October 8</option>
+			   <option id = "Date1009" value = "1009">October 9</option>
+			   <option id = "Date1010" value = "1010">October 10</option>
+			   <option id = "Date1011" value = "1011">October 11</option>
+			   <option id = "Date1012" value = "1012">October 12</option>
+			   <option id = "Date1013" value = "1013">October 13</option>
+			   <option id = "Date1014" value = "1014">October 14</option>
+			   <option id = "Date1015" value = "1015">October 15</option>
+			   <option id = "Date1016" value = "1016">October 16</option>
+			   <option id = "Date1017" value = "1017">October 17</option>
+			   <option id = "Date1018" value = "1018">October 18</option>
+			   <option id = "Date1019" value = "1019">October 19</option>
+			   <option id = "Date1020" value = "1020">October 20</option>
+			   <option id = "Date1022" value = "1022">October 22</option>
+			   <option id = "Date1028" value = "1028">October 28</option>
+			   <option id = "Date1210" value = "1210">December 10</option>
+			   <option id = "Date1220" value = "1220">December 20</option>
+             </select>
+			2018 </p>
+          <p>
+		  <input type="submit"></input>
+		  </p>
+</form>
+
+<p>
+If no observations are on the map, then no observations were made on the selected day.
+</p>
+</body>
+</html>
