@@ -11,9 +11,11 @@
 // Possible model: http://pfch.nyc/311_map/index.html, https://github.com/alanalien/MTA_artlist
 
 // Create a map! initialize the map on the "map" div with a given center and zoom
-var mymap = L.map('mapid').setView([40.7829,73.9654], 10);
 
-// MapBox tile layer
+//const semanticAnalysiis = require('./SemanticAnalysis');
+
+var mymap = L.map('mapid').setView([40.7829,-73.9654], 13);
+
 L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
 	maxZoom: 18,
 	attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
@@ -22,17 +24,37 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
 	id: 'mapbox/streets-v11'
 }).addTo(mymap);
 
+var popup = L.popup();
+
+function onMapClick(e) {
+    popup
+        .setLatLng(e.latlng)
+        .setContent("You clicked the map at " + e.latlng.toString())
+        .openOn(mymap);
+}
+
+mymap.on('click', onMapClick);
+
 hectareKey = {}
 
 plotSquares();
-assignStoriesToSquares(results(), storiesList);
+//var date = results();
+//assignStoriesToSquares(date, storiesList);
+
+let mostPopWordsList = semanticAnalysiis.returnMostPopularWords();
+//add list to HTML doc
 
 function plotSquares() {
-	cornersList = findCorners();
+	var cornersList = findCorners();
 	
-	for col in cornersList {
-		for row in cornersList[col] {
-			var newSq = L.polygon(cornerList[row][col]);
+	for (var col = 0; col < 2; col++) {
+		for (var row = 0; row < 2; row++) {
+			var sqLatLngs = cornersList[row][col];
+			//if (col > 0 && row > 0) {
+
+//			}
+			var newSq = L.polygon(sqLatLngs);
+			console.log("NewSq When Drawing: " + cornersList[row][col] + "\nRow: " + row + " Col: " + col);
 			newSq.addTo(mymap);
 			hectareKey[getHectLabel(row, col)] = newSq;
 		}
@@ -40,8 +62,24 @@ function plotSquares() {
 }
 
 function getHectLabel(num, letr) {
-	lettersKey = {"0": "A"; "1": "B"; "2":"C"; "3":"D"; "4":"E"; "5":"F"; "6":"G"; "7":"H"; "8":"I"}
+	lettersKey = {"0": "A", "1": "B", "2":"C", "3":"D", "4":"E", "5":"F", "6":"G", "7":"H", "8":"I"};
 	return num.toString() + lettersKey[letr];
+}
+
+function newLatFormula(oldLat) {
+	return (oldLat + 0.00076935714);
+}
+
+function newLongFormula(oldLong) {
+	return (oldLong + 0.00096988888);
+}
+
+function getNewLongWhenMoveNE(lat) {
+	return (0.73004673041817*(lat)-103.74435104933);
+}
+
+function getNewLatWhenMoveSE(lng) {
+	return ((lng-20.663078888708)/-(2.3215425531885));
 }
 
 function findCorners() {
@@ -50,61 +88,117 @@ function findCorners() {
 	// central park corners: [40.796869, -73.949262], [40.768078, -73.981749], 
 	// [40.800391, -73.958159], [40.764318, -73.973020]
 	
-	var allSquares = [][];
+	var allSquares = new Array(42).fill(0).map(() => new Array(9).fill(0));;
 	var currentSquare = [];
 	
 	var startLat = 40.768078; // bottom left corner x
 	var startLong = -73.981749; // bottom left corner y
+
+	var initSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
+	var currentSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
 	
-	var currentLat = startLat;
-	var currentLong = startLong;
+	var indexBottomLeft = 0;
+	var indexBottomRight = 1;
+	var indexTopRight = 2;
+	var indexTopLeft = 3;
 	
-	let coordTuple = [number, number];
-	
-	for (col = 0; col < 9; col++) {
-		for (row = 0; row < 42; row++) {
-			newLat = newLat(currentLat);
-			newLong = newLong(currentLong);
+	for (col = 0; col < 2; col++) {
+		for (row = 0; row < 2; row++) {	 
+			newSq = [];
 			
-			newSq = []
+			var bottomLeftCorner = L.latLng(currentSq[indexTopRight].lat, currentSq[indexTopRight].lng);
+
+			var bottomRightCorner = L.latLng(currentSq[indexTopLeft].lat, currentSq[indexTopLeft].lng);
+			if (bottomRightCorner.lat == 0)
+			{
+				bottomRightCorner.lng = newLongFormula(bottomLeftCorner.lng);
+				bottomRightCorner.lat = getNewLatWhenMoveSE(bottomRightCorner.lng);			
+			}
 			
-			coordTuple bottomLeft = [startLat, startLong];
-			coordTuple bottomRight = [getNewXWhenMoveSE(newLong), newLong];
-			coordTuple topRight = [newLat(bottomRight[0]), getNewYWhenMoveNE(newLat(bottomRight[0]))];
-			coordTuple topLeft = [newLat, getNewYWhenMoveNE(newLat)];
+			var topLeftCorner;
 			
-			newSq.add(bottomLeft);
-			newSq.add(bottomRight);
-			newSq.add(topRight);
-			newSq.add(topLeft);
+			if (col > 0) {
+				var prevSq = allSquares[row][col-1];
+				console.log("PrevSq: " + prevSq);
+				topLeftCorner = prevSq[indexTopRight];
+				console.log("IN IF: " + topLeftCorner);
+			}
+			
+			else if(currentSq[indexBottomLeft].lat == 0)
+			{
+				var topLeftLat = newLatFormula(bottomLeftCorner.lat);
+				var topLeftLong = getNewLongWhenMoveNE(topLeftLat);	
+				topLeftCorner = L.latLng(topLeftLat, topLeftLong);
+				console.log("IN ELSE IF");
+			}
+			
+			else
+			{
+				var prevBottomLeft = currentSq[indexBottomLeft];
+				var prevTopLeft = currentSq[indexTopLeft]; //bottomLeftCorner;
+				var latDiff =  prevTopLeft.lat - prevBottomLeft.lat;
+				var longDiff = prevTopLeft.lng - prevBottomLeft.lng;
+				var newTopLeftLng = bottomLeftCorner.lng + longDiff;
+				var newTopLeftLat = bottomLeftCorner.lat + latDiff;
+								
+				topLeftCorner = L.latLng(newTopLeftLat, newTopLeftLng);
+				console.log("IN ELSE");
+			}
+			console.log("Top left: " + topLeftCorner);
+			console.log("Bottom Right Corner: " + bottomRightCorner);
+			var topRightLat = newLatFormula(bottomRightCorner.lat);
+			var topRightLong = topLeftCorner.lng - ((topLeftCorner.lng - bottomRightCorner.lng)-(topLeftCorner.lng - bottomLeftCorner.lng));
+			var topRightCorner = L.latLng(topRightLat, topRightLong);
+			console.log("Top right: " + topRightCorner);
+			
+			if (row == 0) {
+				initSq[indexTopRight].lat = bottomRightCorner.lat;
+				initSq[indexTopRight].lng = bottomRightCorner.lng;
+			}
+			
+			newSq.push(bottomLeftCorner);
+			newSq.push(bottomRightCorner);
+			newSq.push(topRightCorner);
+			newSq.push(topLeftCorner);
+			
+			console.log("col: " + col + " row: " + row + "\n" + newSq);
 			
 			allSquares[row][col] = newSq;
+			console.log(allSquares[row][col]);
 			
-			currentLat = newLat;
+			currentSq = newSq;
 		}
-		currentLong = newLong;
+		currentSq = initSq;
 	}
 	
 	return allSquares;
 }
+/*
+storiesList = [];
 
-function newLat(x) {
-	return x + 7.694*Math.exp(-4);
-}
+class Story {
+	constructor(hect, shift, date, notes) {
+	    this.hectare = hect
+        this.shift = shift
+        this.date = date
+        this.notes = notes
+	}
 
-function newLong(y) {
-	return y - 9.6989*Math.exp(-4);
-}
-
-function getNewYWhenMoveNE(x) {
-	return (0.73004*newLat(x)-103.74435);
-}
-
-function getNewXWhenMoveSE(y) {
-	return ((y-20.71441)/-2.3227);
-}
-
-// somehow get storiesList
+$.ajax({
+    url: "https://data.cityofnewyork.us/resource/gfqj-f768.json",
+    type: "GET",
+    data: {
+      "$limit" : 900,
+      "$$app_token" : "TkRdzZxXZww7Khfwq84rH02To"
+    }
+}).done(function(data) {
+  alert("Retrieved " + data.length + " records from the dataset!");
+  
+	for key, value in data.items() {
+		var observation = new Story(value["hectare"], observation["shift"], observation["date"], observation["note_squirrel_park_stories"]);
+		storiesList.push(observation);
+	}
+});
 
 function assignStoriesToSquares(date, storiesList) {
 	for key, value in hectareKey {
@@ -120,6 +214,16 @@ function assignStoriesToSquares(date, storiesList) {
 
 function results() { 
 		var date = document.getElementById("Date").value;
-		
 		return date.toString() + "2018";
 }
+
+module.exports = {
+   returnStoriesList: function() {
+      return storiesList;
+   }
+   
+   returnDate: function() {
+      return date;
+   }
+}
+*/
