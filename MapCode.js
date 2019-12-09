@@ -12,7 +12,40 @@
 
 // Create a map! initialize the map on the "map" div with a given center and zoom
 
-//const semanticAnalysiis = require('./SemanticAnalysis');
+//const semanticAnalysis = require('./SemanticAnalysis');
+
+storiesList = [];
+
+class Story {
+	constructor(hect, shift, date, notes) {
+	    this.hectare = hect
+        this.shift = shift
+        this.date = date
+        this.notes = notes
+	}
+	
+	/*Story.prototype.toString = function storyToString() {
+		return("Hectare: " + this.hectare + "\nShift: " + this.shift + "\nDate: " + this.date + "\nNotes: " + this.notes);
+	}*/
+}
+
+function huh() { 
+	$.ajax({
+		url: "https://data.cityofnewyork.us/resource/gfqj-f768.json",
+		type: "GET",
+		async: false,
+		data: {
+		  "$limit" : 900,
+		  "$$app_token" : "TkRdzZxXZww7Khfwq84rH02To"
+		}
+	}).done(function(data) {
+		for (key in data) {
+			var value = data[key];
+			var newStory = new Story(value["hectare"], value["shift"], value["date"], value["note_squirrel_park_stories"]);
+			storiesList.push(newStory);
+	   }
+	});
+}
 
 var mymap = L.map('mapid').setView([40.7829,-73.9654], 13);
 
@@ -37,26 +70,27 @@ mymap.on('click', onMapClick);
 
 hectareKey = {}
 
+huh();
 plotSquares();
 //var date = results();
+var date = "all2018"
 //assignStoriesToSquares(date, storiesList);
 
-let mostPopWordsList = semanticAnalysiis.returnMostPopularWords();
+//let mostPopWordsList = semanticAnalysis.returnMostPopularWords();
 //add list to HTML doc
 
 function plotSquares() {
 	var cornersList = findCorners();
 	
-	for (var col = 0; col < 2; col++) {
-		for (var row = 0; row < 2; row++) {
+	for (var col = 0; col < 1; col++) {
+		for (var row = 0; row < 42; row++) {
 			var sqLatLngs = cornersList[row][col];
-			//if (col > 0 && row > 0) {
-
-//			}
-			var newSq = L.polygon(sqLatLngs);
+			var newSq = L.polygon(sqLatLngs).addTo(mymap);
 			console.log("NewSq When Drawing: " + cornersList[row][col] + "\nRow: " + row + " Col: " + col);
-			newSq.addTo(mymap);
 			hectareKey[getHectLabel(row, col)] = newSq;
+			var story = storiesList[row + col];
+			newSq.bindPopup("DATE/TIME: " + story.date + " " + story.shift + " NOTES: " + story.notes);
+			//newSq.bindPopup(row + ", " + col);
 		}
 	}
 }
@@ -102,8 +136,8 @@ function findCorners() {
 	var indexTopRight = 2;
 	var indexTopLeft = 3;
 	
-	for (col = 0; col < 2; col++) {
-		for (row = 0; row < 2; row++) {	 
+	for (col = 0; col < 1; col++) {
+		for (row = 0; row < 42; row++) {	 
 			newSq = [];
 			
 			var bottomLeftCorner = L.latLng(currentSq[indexTopRight].lat, currentSq[indexTopRight].lng);
@@ -173,35 +207,25 @@ function findCorners() {
 	
 	return allSquares;
 }
+
 /*
-storiesList = [];
-
-class Story {
-	constructor(hect, shift, date, notes) {
-	    this.hectare = hect
-        this.shift = shift
-        this.date = date
-        this.notes = notes
-	}
-
 $.ajax({
-    url: "https://data.cityofnewyork.us/resource/gfqj-f768.json",
-    type: "GET",
-    data: {
-      "$limit" : 900,
-      "$$app_token" : "TkRdzZxXZww7Khfwq84rH02To"
-    }
-}).done(function(data) {
-  alert("Retrieved " + data.length + " records from the dataset!");
-  
-	for key, value in data.items() {
-		var observation = new Story(value["hectare"], observation["shift"], observation["date"], observation["note_squirrel_park_stories"]);
-		storiesList.push(observation);
-	}
-});
+  type: "POST",
+  url: "~/DataDownload.py",
+  data: { param: text}
+}).done(function(storiesJSON) {
+   for (story in storiesJSON) {
+		var newStory = new Story(story["hectare"], story["shift"], story["date"], story["note_squirrel_park_stories"]);
+	    storiesList.push(newStory);
+   }
+   console.log(storiesList);
+}); */
+
+/*
 
 function assignStoriesToSquares(date, storiesList) {
-	for key, value in hectareKey {
+	for key in hectareKey.keys() {
+		var value = hectareKey[key]
 		var data = "";
 		for story in storiesList {
 			if ((story.hectare = key && date == "all2018") || (story.hectare = key && story.date = date))  {

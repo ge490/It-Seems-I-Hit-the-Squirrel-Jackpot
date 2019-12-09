@@ -9,27 +9,29 @@ client = Socrata("data.cityofnewyork.us", "TkRdzZxXZww7Khfwq84rH02To", username=
 
 results = client.get("gfqj-f768", limit=810)
 
-class Story:
-    def __init__(self, hect, shift, date, notes, types):
-        self.hectare = hect
-        self.shift = shift
-        self.date = date
-        self.notes = notes
-        self.topics = types
+return results
 
-    def __str__(self):
-        return("Hectare: " + str(self.hectare) + "\nShift: " + str(self.shift)
-              + "\nDate: " + str(self.date) + "\nNotes: " + str(self.notes) +
-              "\nTopics:" + str(self.topics))
+# class Story:
+    # def __init__(self, hect, shift, date, notes, types):
+        # self.hectare = hect
+        # self.shift = shift
+        # self.date = date
+        # self.notes = notes
+        # self.topics = types
 
-storiesList = []
+    # def __str__(self):
+        # return("Hectare: " + str(self.hectare) + "\nShift: " + str(self.shift)
+              # + "\nDate: " + str(self.date) + "\nNotes: " + str(self.notes) +
+              # "\nTopics:" + str(self.topics))
 
-for observation in results:
-    topics = []
+# storiesList = []
 
-    for key, value in observation.items():
-        if key.startswith("story_topic"):
-            topics.append(key + ": " + str(value))
+# for observation in results:
+    # topics = []
 
-    new_story = Story(observation["hectare"], observation["shift"], observation["date"], observation["note_squirrel_park_stories"], topics)
-    storiesList.append(new_story)
+    # for key, value in observation.items():
+        # if key.startswith("story_topic"):
+            # topics.append(key + ": " + str(value))
+
+    # new_story = Story(observation["hectare"], observation["shift"], observation["date"], observation["note_squirrel_park_stories"], topics)
+    # storiesList.append(new_story)
