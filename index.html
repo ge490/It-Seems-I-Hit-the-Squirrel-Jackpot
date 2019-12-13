@@ -17,9 +17,7 @@
 <body>
 <div id="mapid" style="width: 600px; height: 400px;"></div>
 
-<script src = "MapCode.js"></script>
-
-<form name="dateform" onsubmit = "return results()" method="GET">
+<form id="dateform" method="GET">
           <p>
              <label>Select a date: </label>
              <select id = "Date">
@@ -50,12 +48,12 @@
 		  </p>
 </form>
 
-<p>
-If no observations are on the map, then no observations were made on the selected day.
-</p>
-
 <p id = PopWords>
-The ten most popular words in the above selected observations are:
+The ten most popular words (excluding prepositions, articles, and common verbs) in the above selected observations are:
 </p>
+<p id = PopWordsList> </p>
+
+<script src = "MapCode.js"></script>
+
 </body>
 </html>

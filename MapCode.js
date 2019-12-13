@@ -14,7 +14,7 @@
 
 //const semanticAnalysis = require('./SemanticAnalysis');
 
-storiesList = [];
+storiesList = new Array();
 
 class Story {
 	constructor(hect, shift, date, notes) {
@@ -29,7 +29,7 @@ class Story {
 	}*/
 }
 
-function huh() { 
+function dataDownload() { 
 	$.ajax({
 		url: "https://data.cityofnewyork.us/resource/gfqj-f768.json",
 		type: "GET",
@@ -41,9 +41,18 @@ function huh() {
 	}).done(function(data) {
 		for (key in data) {
 			var value = data[key];
-			var newStory = new Story(value["hectare"], value["shift"], value["date"], value["note_squirrel_park_stories"]);
-			storiesList.push(newStory);
-	   }
+			var hect = value["hectare"];
+			
+			var newStory = new Story(hect, value["shift"], value["date"], value["note_squirrel_park_stories"]);
+			
+			var storiesListKeys = Object.keys(storiesList);
+
+			if (!storiesListKeys.includes(hect)){
+				storiesList[hect] = [];
+			}
+							
+			storiesList[hect].push(newStory);
+		}
 	});
 }
 
@@ -59,22 +68,25 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
 
 var popup = L.popup();
 
-function onMapClick(e) {
+/*function onMapClick(e) {
     popup
         .setLatLng(e.latlng)
         .setContent("You clicked the map at " + e.latlng.toString())
         .openOn(mymap);
 }
 
-mymap.on('click', onMapClick);
+mymap.on('click', onMapClick);*/
 
 hectareKey = {}
 
-huh();
+dataDownload();
 plotSquares();
-//var date = results();
 var date = "all2018"
-//assignStoriesToSquares(date, storiesList);
+displayPopularWords(date);
+results();
+
+//console.log(date);
+//filterStories(date, storiesList);
 
 //let mostPopWordsList = semanticAnalysis.returnMostPopularWords();
 //add list to HTML doc
@@ -87,10 +99,23 @@ function plotSquares() {
 			var sqLatLngs = cornersList[row][col];
 			var newSq = L.polygon(sqLatLngs).addTo(mymap);
 			console.log("NewSq When Drawing: " + cornersList[row][col] + "\nRow: " + row + " Col: " + col);
-			hectareKey[getHectLabel(row, col)] = newSq;
-			var story = storiesList[row + col];
-			newSq.bindPopup("DATE/TIME: " + story.date + " " + story.shift + " NOTES: " + story.notes);
-			//newSq.bindPopup(row + ", " + col);
+			
+			var r = row+1;
+			if (row < 9) {
+				r = "0" + r;
+			}
+			
+			var hectLabel = getHectLabel(r, col);
+			
+			hectareKey[hectLabel] = newSq;
+			
+			var storiesAtHect = storiesList[hectLabel];
+			var storiesStr = "HECTARE: " + hectLabel;			
+			for (story of storiesAtHect) {
+				storiesStr += (" DATE/TIME: " + story.date + " " + story.shift + " NOTES: " + story.notes)
+			}
+		
+			newSq.bindPopup(storiesStr);
 		}
 	}
 }
@@ -221,26 +246,95 @@ $.ajax({
    console.log(storiesList);
 }); */
 
-/*
-
-function assignStoriesToSquares(date, storiesList) {
-	for key in hectareKey.keys() {
-		var value = hectareKey[key]
+function filterStories(date) {
+	for (key of Object.keys(hectareKey)) {
+		var value = hectareKey[key];
 		var data = "";
-		for story in storiesList {
-			if ((story.hectare = key && date == "all2018") || (story.hectare = key && story.date = date))  {
+		for (story of storiesList[key]) {
+			//debugger;
+			if ((date == "all2018") || (story.date == date)) {
 				data += story.date + " " + story.shift + "\n\n" + story.notes;
 			}
+			
+			if (data == "") {
+				data = "There are no stories for the selected date in this hectare (" + key + ").";
+			}
 		}
-		value.bindPopUp(data);
+		value.bindPopup(data);
 	}
 }
 
 function results() { 
-		var date = document.getElementById("Date").value;
-		return date.toString() + "2018";
+		var filterResult = new FormData(document.querySelector("form"));
+		//document.getElementById("dateform").value;
+		console.log(document.getElementById("dateform").value);
+		
+		var date = "";
+		
+		if (filterResult == null) {
+			date = "all2018"
+		}
+		
+		else {
+			date = filterResult.value + "2018";
+		}
+		
+		filterStories(date);
+		return;
 }
 
+function mostPopularWords(date) {
+	var wordList = {};
+	var commonWords = [",", "—", "", "of", "in", "for", "on", "with",
+		"at", "by", "from", "up", "about", "into", "over", "after", "the",
+		"and", "a", "that", "I", "it", "not", "he", "as", "you", "this", 
+		"but", "his", "they", "her", "she", "or", "an", "will", "my", "one",
+		"all", "would", "there", "their", "to", "was", "were", "is", "are", "be",
+		"The", "-", "A"];
+	
+	for (key of Object.keys(hectareKey)) {
+		for (story of storiesList[key]) {
+			if ((date == "all2018") || (story.date = date)) {
+				var words = story.notes;
+				var newWords = words.split(" ");
+				for (word of newWords) {
+					if (Object.keys(wordList).includes(word) && !commonWords.includes(word)) {
+						wordList[word] += 1;
+					}
+					else {
+						wordList[word] = 1;
+					}	
+				}
+			}
+		}
+	}	
+	
+	var sortedWordList = Object.keys(wordList).map(function(key) {
+		return [key, wordList[key]];
+	});
+	
+	sortedWordList.sort(function(first, second) {
+		return second[1] - first[1];
+	});
+
+	var popWords = sortedWordList.splice(0, 10);
+	var finalList = "";
+	var idx = 1;
+	
+	for (word of popWords) {
+		finalList += "<p>" + idx + ". " + word[0] + " (" + word[1] + " occurrences).<\p>";
+		idx++;
+	}
+	return finalList;
+}
+
+function displayPopularWords(date) {
+	var ele = document.getElementById("PopWordsList");
+	ele.innerHTML = mostPopularWords(date);
+	return;
+}
+
+/*
 module.exports = {
    returnStoriesList: function() {
       return storiesList;
@@ -249,5 +343,4 @@ module.exports = {
    returnDate: function() {
       return date;
    }
-}
-*/
+}(*/
