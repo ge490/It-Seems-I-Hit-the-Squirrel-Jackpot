@@ -17,8 +17,8 @@
 <body>
 <div id="mapid" style="width: 600px; height: 400px;"></div>
 
-<form id="dateform" method="GET">
-          <p>
+<form id="dateform" method="POST">
+          <div class = "selectData">
              <label>Select a date: </label>
              <select id = "Date">
 			   <option id = "All" value = "all">All Dates</option>
@@ -42,14 +42,14 @@
 			   <option id = "Date1210" value = "1210">December 10</option>
 			   <option id = "Date1220" value = "1220">December 20</option>
              </select>
-			2018 </p>
+			2018 </div>
           <p>
 		  <input type="submit"></input>
 		  </p>
 </form>
 
 <p id = PopWords>
-The ten most popular words (excluding prepositions, articles, and common verbs) in the above selected observations are:
+The ten most popular words (excluding prepositions, articles, and common verbs) in the above selected observations are below. If no words appear, this is because no stories were found for this date.
 </p>
 <p id = PopWordsList> </p>
 

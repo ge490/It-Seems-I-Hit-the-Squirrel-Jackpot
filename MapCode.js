@@ -81,15 +81,8 @@ hectareKey = {}
 
 dataDownload();
 plotSquares();
-var date = "all2018"
-displayPopularWords(date);
-results();
-
-//console.log(date);
-//filterStories(date, storiesList);
-
-//let mostPopWordsList = semanticAnalysis.returnMostPopularWords();
-//add list to HTML doc
+addStories("all2018");
+displayPopularWords("all2018");
 
 function plotSquares() {
 	var cornersList = findCorners();
@@ -106,16 +99,7 @@ function plotSquares() {
 			}
 			
 			var hectLabel = getHectLabel(r, col);
-			
 			hectareKey[hectLabel] = newSq;
-			
-			var storiesAtHect = storiesList[hectLabel];
-			var storiesStr = "HECTARE: " + hectLabel;			
-			for (story of storiesAtHect) {
-				storiesStr += (" DATE/TIME: " + story.date + " " + story.shift + " NOTES: " + story.notes)
-			}
-		
-			newSq.bindPopup(storiesStr);
 		}
 	}
 }
@@ -142,11 +126,6 @@ function getNewLatWhenMoveSE(lng) {
 }
 
 function findCorners() {
-	// loop through map coords & find each square's corners, store in a list
-
-	// central park corners: [40.796869, -73.949262], [40.768078, -73.981749], 
-	// [40.800391, -73.958159], [40.764318, -73.973020]
-	
 	var allSquares = new Array(42).fill(0).map(() => new Array(9).fill(0));;
 	var currentSquare = [];
 	
@@ -246,41 +225,40 @@ $.ajax({
    console.log(storiesList);
 }); */
 
-function filterStories(date) {
+function addStories(date) {
 	for (key of Object.keys(hectareKey)) {
 		var value = hectareKey[key];
-		var data = "";
+		var initData = "HECTARE: " + key;
+		var data = initData;
 		for (story of storiesList[key]) {
-			//debugger;
 			if ((date == "all2018") || (story.date == date)) {
-				data += story.date + " " + story.shift + "\n\n" + story.notes;
-			}
-			
-			if (data == "") {
-				data = "There are no stories for the selected date in this hectare (" + key + ").";
+				data += " DATE: " + story.date + " " + story.shift + " NOTES: " + story.notes;
 			}
 		}
 		value.bindPopup(data);
 	}
 }
 
-function results() { 
-		var filterResult = new FormData(document.querySelector("form"));
-		//document.getElementById("dateform").value;
-		console.log(document.getElementById("dateform").value);
-		
+const form = document.querySelector("form");
+
+$("#dateform").submit(function( event ) {
+	event.preventDefault();
+	
+	var date = convertDate(form.elements[0].value);
+	console.log(date);
+	
+	addStories(date);
+	displayPopularWords(date);
+});
+
+function convertDate(filterResult) { 
 		var date = "";
 		
-		if (filterResult == null) {
-			date = "all2018"
+		if (filterResult != "all2018") {
+			date = filterResult + "2018"
 		}
-		
-		else {
-			date = filterResult.value + "2018";
-		}
-		
-		filterStories(date);
-		return;
+
+		return date;
 }
 
 function mostPopularWords(date) {
@@ -294,7 +272,7 @@ function mostPopularWords(date) {
 	
 	for (key of Object.keys(hectareKey)) {
 		for (story of storiesList[key]) {
-			if ((date == "all2018") || (story.date = date)) {
+			if ((date == "all2018") || (story.date == date)) {
 				var words = story.notes;
 				var newWords = words.split(" ");
 				for (word of newWords) {
