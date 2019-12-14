@@ -1,19 +1,3 @@
-// Use this file to take existing Stories objects and put them onto a map. 
-
-// Draw squares on a map of Central Park using Leaflet. Squares represent hectares. 
-// Attach stories to hectares somehow. 
-// Be able to filter stories by date.
-
-// Leaflet docs: https://leafletjs.com/reference-1.5.0.html 
-// Leaflet tutorial: https://leafletjs.com/examples/quick-start/
-// Leaflet is in Javascript!! 
-
-// Possible model: http://pfch.nyc/311_map/index.html, https://github.com/alanalien/MTA_artlist
-
-// Create a map! initialize the map on the "map" div with a given center and zoom
-
-//const semanticAnalysis = require('./SemanticAnalysis');
-
 storiesList = new Array();
 
 class Story {
@@ -23,10 +7,6 @@ class Story {
         this.date = date
         this.notes = notes
 	}
-	
-	/*Story.prototype.toString = function storyToString() {
-		return("Hectare: " + this.hectare + "\nShift: " + this.shift + "\nDate: " + this.date + "\nNotes: " + this.notes);
-	}*/
 }
 
 function dataDownload() { 
@@ -68,15 +48,6 @@ L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_toke
 
 var popup = L.popup();
 
-/*function onMapClick(e) {
-    popup
-        .setLatLng(e.latlng)
-        .setContent("You clicked the map at " + e.latlng.toString())
-        .openOn(mymap);
-}
-
-mymap.on('click', onMapClick);*/
-
 hectareKey = {}
 
 dataDownload();
@@ -87,11 +58,10 @@ displayPopularWords("all2018");
 function plotSquares() {
 	var cornersList = findCorners();
 	
-	for (var col = 0; col < 1; col++) {
+	for (var col = 0; col < 9; col++) {
 		for (var row = 0; row < 42; row++) {
 			var sqLatLngs = cornersList[row][col];
 			var newSq = L.polygon(sqLatLngs).addTo(mymap);
-			console.log("NewSq When Drawing: " + cornersList[row][col] + "\nRow: " + row + " Col: " + col);
 			
 			var r = row+1;
 			if (row < 9) {
@@ -117,8 +87,8 @@ function newLongFormula(oldLong) {
 	return (oldLong + 0.00096988888);
 }
 
-function getNewLongWhenMoveNE(lat) {
-	return (0.73004673041817*(lat)-103.74435104933);
+function getNewLongWhenMoveNE(bottomCorner, thisLat) {
+	return 0.73004673041817*(thisLat - bottomCorner.lat) + bottomCorner.lng;
 }
 
 function getNewLatWhenMoveSE(lng) {
@@ -129,8 +99,8 @@ function findCorners() {
 	var allSquares = new Array(42).fill(0).map(() => new Array(9).fill(0));;
 	var currentSquare = [];
 	
-	var startLat = 40.768078; // bottom left corner x
-	var startLong = -73.981749; // bottom left corner y
+	var startLat = 40.768078;
+	var startLong = -73.981749;
 
 	var initSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
 	var currentSq = [L.latLng(0,0), L.latLng(0,0), L.latLng(startLat, startLong), L.latLng(0,0)];
@@ -140,54 +110,27 @@ function findCorners() {
 	var indexTopRight = 2;
 	var indexTopLeft = 3;
 	
-	for (col = 0; col < 1; col++) {
+	for (col = 0; col < 9; col++) {
 		for (row = 0; row < 42; row++) {	 
 			newSq = [];
 			
 			var bottomLeftCorner = L.latLng(currentSq[indexTopRight].lat, currentSq[indexTopRight].lng);
 
 			var bottomRightCorner = L.latLng(currentSq[indexTopLeft].lat, currentSq[indexTopLeft].lng);
-			if (bottomRightCorner.lat == 0)
-			{
+			
+			if (bottomRightCorner.lat == 0) {
 				bottomRightCorner.lng = newLongFormula(bottomLeftCorner.lng);
 				bottomRightCorner.lat = getNewLatWhenMoveSE(bottomRightCorner.lng);			
 			}
 			
-			var topLeftCorner;
-			
-			if (col > 0) {
-				var prevSq = allSquares[row][col-1];
-				console.log("PrevSq: " + prevSq);
-				topLeftCorner = prevSq[indexTopRight];
-				console.log("IN IF: " + topLeftCorner);
-			}
-			
-			else if(currentSq[indexBottomLeft].lat == 0)
-			{
-				var topLeftLat = newLatFormula(bottomLeftCorner.lat);
-				var topLeftLong = getNewLongWhenMoveNE(topLeftLat);	
-				topLeftCorner = L.latLng(topLeftLat, topLeftLong);
-				console.log("IN ELSE IF");
-			}
-			
-			else
-			{
-				var prevBottomLeft = currentSq[indexBottomLeft];
-				var prevTopLeft = currentSq[indexTopLeft]; //bottomLeftCorner;
-				var latDiff =  prevTopLeft.lat - prevBottomLeft.lat;
-				var longDiff = prevTopLeft.lng - prevBottomLeft.lng;
-				var newTopLeftLng = bottomLeftCorner.lng + longDiff;
-				var newTopLeftLat = bottomLeftCorner.lat + latDiff;
-								
-				topLeftCorner = L.latLng(newTopLeftLat, newTopLeftLng);
-				console.log("IN ELSE");
-			}
-			console.log("Top left: " + topLeftCorner);
-			console.log("Bottom Right Corner: " + bottomRightCorner);
+			var newTopLeftLat = newLatFormula(bottomLeftCorner.lat);
+			var newTopLeftLng = getNewLongWhenMoveNE(bottomLeftCorner, newTopLeftLat);
+			var topLeftCorner = L.latLng(newTopLeftLat, newTopLeftLng);
+
 			var topRightLat = newLatFormula(bottomRightCorner.lat);
-			var topRightLong = topLeftCorner.lng - ((topLeftCorner.lng - bottomRightCorner.lng)-(topLeftCorner.lng - bottomLeftCorner.lng));
+			var topRightLong = getNewLongWhenMoveNE(bottomRightCorner, topRightLat);
+			
 			var topRightCorner = L.latLng(topRightLat, topRightLong);
-			console.log("Top right: " + topRightCorner);
 			
 			if (row == 0) {
 				initSq[indexTopRight].lat = bottomRightCorner.lat;
@@ -198,11 +141,8 @@ function findCorners() {
 			newSq.push(bottomRightCorner);
 			newSq.push(topRightCorner);
 			newSq.push(topLeftCorner);
-			
-			console.log("col: " + col + " row: " + row + "\n" + newSq);
-			
+						
 			allSquares[row][col] = newSq;
-			console.log(allSquares[row][col]);
 			
 			currentSq = newSq;
 		}
@@ -212,30 +152,21 @@ function findCorners() {
 	return allSquares;
 }
 
-/*
-$.ajax({
-  type: "POST",
-  url: "~/DataDownload.py",
-  data: { param: text}
-}).done(function(storiesJSON) {
-   for (story in storiesJSON) {
-		var newStory = new Story(story["hectare"], story["shift"], story["date"], story["note_squirrel_park_stories"]);
-	    storiesList.push(newStory);
-   }
-   console.log(storiesList);
-}); */
-
 function addStories(date) {
 	for (key of Object.keys(hectareKey)) {
 		var value = hectareKey[key];
-		var initData = "HECTARE: " + key;
-		var data = initData;
-		for (story of storiesList[key]) {
-			if ((date == "all2018") || (story.date == date)) {
-				data += " DATE: " + story.date + " " + story.shift + " NOTES: " + story.notes;
+		var data = "HECTARE: " + key;
+		var hectareStoryArr = storiesList[key]
+
+		if (hectareStoryArr != undefined) {
+			for (story of hectareStoryArr) {
+				if ((date == "all2018") || (story.date == date)) {
+					data += " DATE: " + story.date + " " + story.shift + " NOTES: " + story.notes;
+				}
 			}
+			value.bindPopup(data);
+
 		}
-		value.bindPopup(data);
 	}
 }
 
@@ -245,8 +176,7 @@ $("#dateform").submit(function( event ) {
 	event.preventDefault();
 	
 	var date = convertDate(form.elements[0].value);
-	console.log(date);
-	
+		
 	addStories(date);
 	displayPopularWords(date);
 });
@@ -271,17 +201,22 @@ function mostPopularWords(date) {
 		"The", "-", "A"];
 	
 	for (key of Object.keys(hectareKey)) {
-		for (story of storiesList[key]) {
-			if ((date == "all2018") || (story.date == date)) {
-				var words = story.notes;
-				var newWords = words.split(" ");
-				for (word of newWords) {
-					if (Object.keys(wordList).includes(word) && !commonWords.includes(word)) {
-						wordList[word] += 1;
+		var hectareStoryArr = storiesList[key]
+		
+		if (hectareStoryArr != undefined) {
+			for (story of hectareStoryArr) {
+				console.log("HERE");
+				if ((date == "all2018") || (story.date == date)) {
+					var words = story.notes;
+					var newWords = words.split(" ");
+					for (word of newWords) {
+						if (Object.keys(wordList).includes(word) && !commonWords.includes(word)) {
+							wordList[word] += 1;
+						}
+						else {
+							wordList[word] = 1;
+						}	
 					}
-					else {
-						wordList[word] = 1;
-					}	
 				}
 			}
 		}
@@ -311,14 +246,3 @@ function displayPopularWords(date) {
 	ele.innerHTML = mostPopularWords(date);
 	return;
 }
-
-/*
-module.exports = {
-   returnStoriesList: function() {
-      return storiesList;
-   }
-   
-   returnDate: function() {
-      return date;
-   }
-}(*/
