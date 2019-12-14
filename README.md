@@ -1,4 +1,4 @@
-# It Seems I Hit the Squirrel Jackpot! 
+# It Seems I Hit the Squirrel Jackpot!: Mapping the 2018 Squirrel Census of Central Park
  
 "It Seems I Hit the Squirrel Jackpot!" is a project that explores data from the 2018 Squirrel Census of Central Park. Census takers counted every single squirrel in park and recorded a number of observations that, when put together, provide a comprehensive picture of both Central Park's squirrels and its people. This project, which was named for one of these observations, maps each of the observations based on the hectares in which they were taken. The map can be manipulated to show all the observations from a certain day in order to create a miniature portrait of one day of life in New York City. The project also provides data on the most popular words used in the observations from the specified day.
  
