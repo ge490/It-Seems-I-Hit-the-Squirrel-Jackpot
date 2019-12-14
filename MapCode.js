@@ -205,7 +205,6 @@ function mostPopularWords(date) {
 		
 		if (hectareStoryArr != undefined) {
 			for (story of hectareStoryArr) {
-				console.log("HERE");
 				if ((date == "all2018") || (story.date == date)) {
 					var words = story.notes;
 					var newWords = words.split(" ");
