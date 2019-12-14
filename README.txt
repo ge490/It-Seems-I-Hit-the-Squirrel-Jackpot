@@ -1,0 +1,7 @@
+# It Seems I Hit the Squirrel Jackpot! 
+ 
+"It Seems I Hit the Squirrel Jackpot!" is a project that explores data from the 2018 Squirrel Census of Central Park. Census takers counted every single squirrel in park and recorded a number of observations that, when put together, provide a comprehensive picture of both Central Park's squirrels and its people. This project, which was named for one of these observations, maps each of the observations based on the hectares in which they were taken. The map can be manipulated to show all the observations from a certain day in order to create a miniature portrait of one day of life in New York City. The project also provides data on the most popular words used in the observations from the specified day.
+ 
+This project was written entirely in Javascript. I used Leaflet to create and manipulate the map and, as Leaflet is in JS, I found that it was best to use jQuery and AJAX to download the data from its home at NYC Open Data (https://data.cityofnewyork.us/Environment/2018-Central-Park-Squirrel-Census-Stories/gfqj-f768) and to manipulate the HTML page on which it's displayed. The greatest challenge of this project was drawing the hectare grid on the map of Central Park, because the park doesn't run directly North to South. With much debugging and algebra, I was able to get the grid to display as I wished and for the observations to attach to each square. 
+
+There are no special instructions for running this code. Everything appears on the HTML page, which may take a minute or so to load. 
